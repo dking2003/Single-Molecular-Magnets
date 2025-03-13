@@ -1,0 +1,17 @@
+#calculate the ZFS parameter#
+! PBE0 DKH DKH-DEF2-SVP SARC/J AUTOAUX UNO
+! SloppySCF
+%basis
+  newgto Dy "SARC2-DKH-QZVP" end
+end
+%scf
+  guess    pmodel
+  maxiter  10000
+end
+
+%PAL NPROCS 16 END
+* XYZFILE 0 6 fixed-frame.xyz
+%EPRNMR DTENSOR SSANDSO #spin spin and spin orbit 
+        DSS     UNO  #Use spin density from UNO printbasis ~ spin-unrestricted natural orbital
+        DSOC    CP #Couple perturbed method 
+END
