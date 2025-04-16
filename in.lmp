@@ -1,0 +1,145 @@
+units		real
+atom_style	full
+boundary	p p p
+
+# Set SPC/E water model
+pair_style lj/cut/coul/long 10.0
+
+#neigh_modify delay 0 every 1 check no
+
+# Read in input file
+
+read_data	data_out.lmp
+
+# Define bond and angle parameter
+
+
+bond_style harmonic
+angle_style harmonic
+
+bond_coeff 1 100 1.0                    # O-H bond water
+bond_coeff 2 100 1.09                   # C-H bond acac methyl
+bond_coeff 3 100 1.08                   # C-H bond acac central
+bond_coeff 4 100 1.55                   # C-C bond acac outer
+bond_coeff 5 100 1.42                   # C-C bond acac inner
+bond_coeff 6 100 1.24                   # C-O bond acac
+
+angle_coeff 1 100 109.47                # H-O-H angle water
+angle_coeff 2 100 109.2                 # H-C-H acac methyl
+angle_coeff 3 100 115.5                 # C-C-C acac outer
+angle_coeff 4 100 115.85                # C-C-H acac inner
+angle_coeff 5 100 116                   # C-C-O acac outer
+angle_coeff 6 100 128.5                 # O-C-C acac inner
+angle_coeff 7  70 109.5                 # H-C-C acac outer
+
+# Define LJ parameters
+
+pair_coeff      1  1 0.0835   2.8654866 # Dy
+pair_coeff      2  2 0.155354 3.166     # Water O
+pair_coeff      3  3 0.0 0.0            # Water H
+pair_coeff      4  4 0.0 0.0            # Outer H on ligand
+pair_coeff      5  5 0.066 3.5          # C on ligand methyl group
+pair_coeff      6  6 0.105 3.75         # C on ligand carbonyl
+pair_coeff      7  7 0.21 2.96          # O on ligand carbonyl
+pair_coeff      8  8 0.066 3.5          # Central C on ligand
+pair_coeff      9  9 0.0 0.0            # Central H on ligand
+
+
+
+# Electrostatic interactions
+
+kspace_style	pppm 0.0001
+
+set type  1 charge +3			# Dy
+set type  2 charge -0.8476		# Water O
+set type  3 charge +0.4238		# Water H
+set type  4 charge -0.0181		# Outer H on ligand
+set type  5 charge -0.1774		# C on ligand methyl group
+set type  6 charge 0.7690		# C on ligand carbonyl
+set type  7 charge -0.6560		# O on ligand carbonyl
+set type  8 charge -0.9769		# Central C on ligand
+set type  9 charge 0.2143		# Central H on ligand
+
+
+# Neighbour list and timestep
+
+neighbor	2.0 bin
+timestep	1.0
+
+# Set velocities
+
+velocity all create 50 05856
+
+### How often to print out properties
+
+thermo 1
+
+### Set variables for run times
+
+variable	equil_run equal 40000
+variable	npt_run equal 100000
+variable	prod_run equal 10000
+variable	nve_run equal 80000
+variable	cooling_run equal 1000000
+
+#####################################################################################################################
+
+minimize	1e-4 1e-6 1000 10000
+
+### Integration details
+group lanthanide type 1
+group water type 2 3
+group acac type 4 5 6 7 8 9
+group molecules type 2 3 4 5 6 7 8 9
+
+fix 75 molecules rigid/nvt molecule temp 50 50 500
+fix 76 lanthanide nvt temp 50 50 500
+
+#####################################################################################################################
+
+#### Equilibration
+
+### Coordinates printed to equil.xyz
+### Potential energy and tempeature printed to equil.out
+
+thermo 50
+
+variable	perat equal pe
+variable	tmp equal temp
+fix	pr all print 1 "${perat} ${tmp}" file equil.out screen no title "# potential temperature"
+dump	1 all xyz 200 equil.xyz
+dump_modify	1 sort id
+dump_modify	1 element Dy O H H C C O C H
+
+thermo_style	custom step temp pe ke etotal evdwl ecoul epair ebond eangle emol elong
+run	${equil_run}
+
+#####################################################################################################################
+
+#### NVE simulations
+
+### Coordinates printed to cooling.xyz
+### Potential energy and tempeature printed to cooling.out
+
+unfix	75
+unfix	76
+velocity all create 50 76992
+fix 75 molecules rigid molecule
+fix 76 lanthanide nve temp
+
+thermo 50
+
+variable	perat equal pe
+variable	tmp equal temp
+fix	pr all print 1 "${perat} ${tmp}" file prod.out screen no title "# potential temperature"
+undump	1
+dump	1 all xyz 1 prod.xyz
+
+dump_modify	1 sort id
+dump_modify	1 element Dy O H H C C O C H
+
+thermo_style	custom step temp pe ke etotal evdwl ecoul epair ebond eangle emol elong
+run	${prod_run}
+
+
+write_data	out.lmp
