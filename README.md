@@ -7,5 +7,5 @@ Supplementary material for masters project
 
 [in.lmp](https://github.com/dking2003/Single-Molecular-Magnets/blob/main/in.lmp) Example LAMMPS input file for running classical MD simulations.
 
-[cp2k.in](https://github.com/dking2003/Single-Molecular-Magnets/blob/main/cp2k.in) Example CP2K input file for diipole moment ACF
+[cp2k.in](https://github.com/dking2003/Single-Molecular-Magnets/blob/main/cp2k.in) Example CP2K input file for dipole moment ACF
 
